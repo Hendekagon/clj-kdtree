@@ -6,7 +6,6 @@
 (defrecord Node [left right value])
 (defrecord Result [point ^double dist-squared])
 
-
 (defn- dist-squared
   "Compute the K-dimensional distance between two points"
   [^doubles a ^doubles b]
@@ -17,6 +16,13 @@
       (let [v (- (aget a ind) (aget b ind))]
         (recur (+ res (* v v)) (inc ind))))))
 
+(def ^:private dist-func (atom dist-squared))
+
+(defn set-dist-func! [func]
+  (reset! dist-func func))
+
+(defn get-dist-func []
+  @dist-func)
 
 (defn- build-tree-internal [points depth]
   (if (empty? points) nil
@@ -57,16 +63,19 @@ points are of the same dimension."
         dimension (mod depth k)]
     (if (nil? tree)
       (Node. nil nil point point-meta nil)
-      (let [^doubles value (:value tree)
-            go-to-left? (< (aget point dimension)
-                           (aget value dimension))
-            left (if go-to-left?
-                   (insert-internal (:left tree) point (inc depth) point-meta)
-                   (:left tree))
-            right (if-not go-to-left?
-                    (insert-internal (:right tree) point (inc depth) point-meta)
-                    (:right tree))]
-        (Node. left right value (meta tree) nil)))))
+      (let [^doubles value (:value tree)]
+        (if (= (aget point dimension)
+               (aget value dimension))
+          (Node. (:left tree) (:right tree) value (meta tree) nil)
+          (let [go-to-left? (< (aget point dimension)
+                               (aget value dimension))
+                left (if go-to-left?
+                       (insert-internal (:left tree) point (inc depth) point-meta)
+                       (:left tree))
+                right (if-not go-to-left?
+                        (insert-internal (:right tree) point (inc depth) point-meta)
+                        (:right tree))]
+            (Node. left right value (meta tree) nil)))))))
 
 (defn insert
   "Adds a point to an existing tree."
@@ -198,7 +207,7 @@ bigger than n elements."
                farthest-semiplane ((if (> dim-dist 0.0) :left :right) tree)
                ;; Compute best list for the near-side of the search order
                best-with-cur (insert-sorted! best (Result. v
-                                                           (dist-squared v point)
+                                                           ((get-dist-func) v point)
                                                            (meta tree)
                                                            nil)
                                              n)

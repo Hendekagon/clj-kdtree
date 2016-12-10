@@ -1,4 +1,4 @@
-(defproject clj-kdtree "1.2.1-SNAPSHOT"
+(defproject cassc/clj-kdtree "1.2.1-SNAPSHOT"
   :description "kd-trees for Clojure"
   :url "https://github.com/abscondment/clj-kdtree"
   :license {:name "The MIT License"
@@ -8,5 +8,4 @@
   :profiles {:dev {:dependencies [[criterium "0.4.3"]
                                   [net.sf/javaml "0.1.7"]]
                    :repositories [["javaml" {:url "http://corp.array.ca/nest-web/mavenrepo/"
-                                             :checksum :warn}]]}}
-  :plugins [[lein-swank "1.4.4"]])
+                                             :checksum :warn}]]}})
