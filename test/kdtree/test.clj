@@ -1,11 +1,11 @@
 (ns kdtree.test
-  (:use [kdtree] :reload)
+  (:use [core] :reload)
   (:import [kdtree Node Result])
   (:use [clojure.test]))
 
 ;; pull in private function
-(def dist-squared (ns-resolve 'kdtree 'dist-squared))
-(def insert-sorted! (ns-resolve 'kdtree 'insert-sorted!))
+(def dist-squared (ns-resolve 'core 'dist-squared))
+(def insert-sorted! (ns-resolve 'core 'insert-sorted!))
 
 (defn- dist-squared-vec [a b]
   (dist-squared (double-array a) (double-array b)))
@@ -149,7 +149,7 @@
 (deftest- Neighbors-2d-Example-Wikipedia
   (let [tree (build-tree [[1 11] [2 5] [4 8] [6 4] [5 0] [7 9] [8 2]])]
     (is (= (nearest-neighbor tree [3 9])
-           (kdtree/Result. [4.0 8.0] 2.0)))))
+           (core/Result. [4.0 8.0] 2.0)))))
 
 ;;; A simple 2d example.
 (deftest- Neighbors-2d-Example
@@ -305,10 +305,10 @@
 
 (deftest- Test-delete-same-x
   (let [ points [[0 0] [0 0.5] [0 1] [1 1] [1 0]]
-        tree (kdtree/build-tree points)
-        tree-del-00 (kdtree/delete tree [0 0])]
+        tree (core/build-tree points)
+        tree-del-00 (core/delete tree [0 0])]
     (is (= (map double [0 0.5])
-           (:point (kdtree/nearest-neighbor tree-del-00 [0 0]))))))
+           (:point (core/nearest-neighbor tree-del-00 [0 0]))))))
 
 
 (deftest- Find-Min-Retains-Metadata
@@ -325,7 +325,7 @@
   (let [metadata {:arbitrary "Data!"}
         tree (build-tree [[1 11] [2 5] (with-meta [4 8] metadata) [6 4] [5 0] [7 9] [8 2]])]
     (is (= (nearest-neighbor tree [3 9])
-           (kdtree/Result. [4.0 8.0] 2.0)))
+           (core/Result. [4.0 8.0] 2.0)))
     (is (= (meta (nearest-neighbor tree [3 9]))
            metadata))))
 
@@ -368,7 +368,7 @@
            (->> (map meta))))))
 
 
-(def inside-interval? (ns-resolve 'kdtree 'inside-interval?))
+(def inside-interval? (ns-resolve 'core 'inside-interval?))
 
 (deftest- Inside-Interval?
   (let [interval (map double-array [[0 10] [5 10]])]

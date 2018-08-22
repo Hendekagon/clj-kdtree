@@ -1,7 +1,7 @@
 ;; Copyright (C) 2009-2011 Brendan Ribera. All rights reserved.
 ;; Distributed under the MIT License; see the file LICENSE
 ;; at the root of this distribution.
-(ns kdtree)
+(ns kdtree.core)
 
 (defrecord Node [left right value])
 (defrecord Result [point ^double dist-squared])
