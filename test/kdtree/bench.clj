@@ -1,5 +1,5 @@
 (ns kdtree.bench
-  (:require [core :as kd]
+  (:require [kdtree.core :as kd]
             [criterium.core :as cr])
   (:import [net.sf.javaml.core.kdtree KDTree]))
 

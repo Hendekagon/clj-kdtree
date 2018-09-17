@@ -1,5 +1,5 @@
 (ns kdtree.test
-  (:use [core] :reload)
+  (:use [kdtree.core] :reload)
   (:import [kdtree Node Result])
   (:use [clojure.test]))
 
