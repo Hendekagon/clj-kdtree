@@ -1,22 +1,18 @@
 (ns kdtree.test
-  (:use [core] :reload)
-  (:import [kdtree Node Result])
-  (:use [clojure.test]))
+  (:use [kdtree.core]
+        [clojure.test])
+  (:import [kdtree.core Node Result]))
 
-;; pull in private function
-(def dist-squared (ns-resolve 'core 'dist-squared))
-(def insert-sorted! (ns-resolve 'core 'insert-sorted!))
-
-(defn- dist-squared-vec [a b]
+(defn dist-squared-vec [a b]
   (dist-squared (double-array a) (double-array b)))
 
-(defn- point-to-ints [p]
+(defn point-to-ints [p]
   ((comp vec (partial map int)) p))
 
-(defn- results-to-int-points [r]
+(defn results-to-int-points [r]
   (map (comp point-to-ints :point) r))
 
-(defn- legible-tree [t]
+(defn legible-tree [t]
   (if (not (nil? t))
     (let [val (point-to-ints (seq (:value t)))
           left (:left t)
@@ -25,7 +21,7 @@
         (list val (legible-tree left) (legible-tree right))
         (list val)))))
 
-(defn- ds
+(defn ds
   [& args]
   (double-array args))
 
@@ -34,7 +30,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; Test kD distance-squared function
-(deftest- Distance-Squared
+(deftest Distance-Squared
   ;;; Simple 2-d point
   (is (== (dist-squared-vec [0 0] [1 1]) 2))
   ;;; 2-d using floating points
@@ -57,7 +53,7 @@
              (* 7.0 7.0)))))
 
 
-(deftest- Insert-Sorted
+(deftest Insert-Sorted
   (letfn [(to-res [vals]
             (mapv #(Result. % % nil nil) vals))]
     (are [vals new-val n expected] (= (-> (to-res vals)
@@ -77,7 +73,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; 2d-tree example found at: http://en.wikipedia.org/wiki/Kd-tree
-(deftest- Build-2d-Example-Wikipedia
+(deftest Build-2d-Example-Wikipedia
   (let [tree (legible-tree
               (build-tree [[4 7] [2 3] [5 4] [9 6] [8 1] [7 2]]))]
     (is (= tree
@@ -86,7 +82,7 @@
                ([9 6] ([8 1]) nil))))))
 
 ;;; Set of points with duplicate x and y coordinates
-(deftest- Build-2d-Example-B
+(deftest Build-2d-Example-B
   (let [tree (legible-tree
               (build-tree [[0 0] [0 1] [0 2] [2 2] [2 0]]))]
     (is (= tree
@@ -97,7 +93,7 @@
                   ([2 2])))))))
 
 ;;; Simple 3d-tree
-(deftest- Build-3d-Example-A
+(deftest Build-3d-Example-A
   (let [tree (legible-tree
               (build-tree [[5 5 5] [2 2 2] [6 6 6] [7 7 7]
                            [4 4 4] [1 1 1] [3 3 3] [8 8 8]]))]
@@ -109,7 +105,7 @@
                ([7 7 7] ([6 6 6]) ([8 8 8])))))))
 
 ;;; Variation on simple 3d-tree
-(deftest- Build-3d-Example-B
+(deftest Build-3d-Example-B
   (let [tree (legible-tree
               (build-tree [[5 5 5] [2 2 2] [6 6 6] [7 7 7]
                            [4 4 4] [1 1 1] [3 3 3]]))]
@@ -119,7 +115,7 @@
                ([6 6 6] ([5 5 5]) ([7 7 7])))))))
 
 ;;; Slightly more complicated 3d-tree
-(deftest- Build-3d-Example-C
+(deftest Build-3d-Example-C
   (let [tree (legible-tree
               (build-tree [[1 9 9] [2 3 1] [3 1 4] [4 7 6]
                            [5 2 3] [6 8 7] [7 6 5] [8 5 4]]))]
@@ -135,7 +131,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; Test that search results match the naïve sort-by-distance algorithm.
-(deftest- Neighbors-Sorting-Example
+(deftest Neighbors-Sorting-Example
   (let [points (for [x (range 2 20)
                      y (range 2 20)]
                  [(* 0.95 x) (* -1.23 y)])
@@ -146,13 +142,13 @@
 
 ;;; Simple example based on the search animation from:
 ;;; http://en.wikipedia.org/wiki/Kd-tree
-(deftest- Neighbors-2d-Example-Wikipedia
+(deftest Neighbors-2d-Example-Wikipedia
   (let [tree (build-tree [[1 11] [2 5] [4 8] [6 4] [5 0] [7 9] [8 2]])]
     (is (= (nearest-neighbor tree [3 9])
-           (core/Result. [4.0 8.0] 2.0)))))
+           (kdtree.core/Result. [4.0 8.0] 2.0)))))
 
 ;;; A simple 2d example.
-(deftest- Neighbors-2d-Example
+(deftest Neighbors-2d-Example
   (let [points [[8 8] [3 1] [1 1] [6 6] [7 7] [3 3] [1 3] [4 4] [5 5]]
         tree (build-tree points)]
     ;;; Confirm that the nearest hit is one of the four
@@ -168,7 +164,7 @@
 
 ;;; Some real-world location comparisons.
 ;;; http://maps.google.com/maps?q=47.6203+-122.34932
-(deftest- Neighbors-2d-Seattle
+(deftest Neighbors-2d-Seattle
   (let [cities { [47.6203   -122.34932]  :seattle
                  [37.810054 -122.477876] :san-francisco
                  [41.007252  28.978135]  :binbirdirek
@@ -185,7 +181,7 @@
 ;;; functions. We look for neighbors using a point whose coordinates are
 ;;; *below* n=1 for each function, ensuring that the smallest point of the
 ;;; tree will be the first neighbor.
-(deftest- Neighbors-4d-Example
+(deftest Neighbors-4d-Example
   (let [points (map #(list (Math/pow Math/PI (/ % 2))
                            (Math/pow Math/PI %)
                            (Math/sqrt (* % % Math/E))
@@ -202,7 +198,7 @@
 
 ;;; Mimic Neighbors-2d-Example, but build the tree normally and add one point
 ;;; via insert.
-(deftest- Insert-2d-Example
+(deftest Insert-2d-Example
   (let [points [[8 8] [3 1] [6 6] [7 7] [3 3] [1 3] [4 4] [5 5]]
         tree (insert (build-tree points) [1 1])]
     (is (== 2 (:dist-squared (nearest-neighbor tree [2 2]))))
@@ -215,9 +211,9 @@
            (drop 4 (sort (conj points [1 1])))))))
 
 ;;; Mimic Neighbors-2d-Example, but build the tree entirely by using insert.
-(deftest- Insert-Build-2d-Example
+(deftest Insert-Build-2d-Example
   (let [points [[8 8] [3 1] [1 1] [6 6] [7 7] [3 3] [1 3] [4 4] [5 5]]
-        tree (reduce insert nil points)]
+        tree (reduce insert (build-tree points) points)]
     (is (== 2 (:dist-squared (nearest-neighbor tree [2 2]))))
     (is (= (sort
             (results-to-int-points (nearest-neighbor tree [2 2] 4)))
@@ -227,7 +223,7 @@
 
 ;;; Mimic Neighbors-4d-Example, but build the tree half by build-tree and
 ;;; half by insert.
-(deftest- Insert-4d-Example
+(deftest Insert-4d-Example
   (let [points (vec (map #(list (Math/pow Math/PI (/ % 2))
                                 (Math/pow Math/PI %)
                                 (Math/sqrt (* % % Math/E))
@@ -246,7 +242,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; Test find-min in various dimensions
-(deftest- Test-find-min
+(deftest Test-find-min
   (let [points [[0.0 1.4 1.9 3.4]
                 [123 0.1 4.3 6.6]
                 [0.1 0.2 0.3 0.4]
@@ -267,7 +263,7 @@
        (is (= (map double (nth points n))
               (find-min tree n)))))))
 
-(deftest- Test-delete-root
+(deftest Test-delete-root
   (let [tree
         (Node.
          (Node.
@@ -303,15 +299,15 @@
                      ([90 60]))
                   nil))))))
 
-(deftest- Test-delete-same-x
+(deftest Test-delete-same-x
   (let [ points [[0 0] [0 0.5] [0 1] [1 1] [1 0]]
-        tree (core/build-tree points)
-        tree-del-00 (core/delete tree [0 0])]
+        tree (kdtree.core/build-tree points)
+        tree-del-00 (kdtree.core/delete tree [0 0])]
     (is (= (map double [0 0.5])
-           (:point (core/nearest-neighbor tree-del-00 [0 0]))))))
+           (:point (kdtree.core/nearest-neighbor tree-del-00 [0 0]))))))
 
 
-(deftest- Find-Min-Retains-Metadata
+(deftest Find-Min-Retains-Metadata
   (let [tree (->> [[0 1 2] [2 3 0] [3 3 3] [4 4 4] [4 0 2]]
                   (map #(map double %))
                   (map #(with-meta % {:value %}))
@@ -321,15 +317,15 @@
         (is (= min (:value (meta min))))))))
 
 
-(deftest- Retains-Metadata
+(deftest Retains-Metadata
   (let [metadata {:arbitrary "Data!"}
         tree (build-tree [[1 11] [2 5] (with-meta [4 8] metadata) [6 4] [5 0] [7 9] [8 2]])]
     (is (= (nearest-neighbor tree [3 9])
-           (core/Result. [4.0 8.0] 2.0)))
+           (kdtree.core/Result. [4.0 8.0] 2.0)))
     (is (= (meta (nearest-neighbor tree [3 9]))
            metadata))))
 
-(deftest- Delete-Retains-Metadata
+(deftest Delete-Retains-Metadata
   ;; create a tree, delete nothing, assert that all metas are non-null
   (is (every?
        (comp not nil?)
@@ -356,7 +352,7 @@
                (map correct-meta?)
                (every? true?))))))
 
-(deftest- Insert-Retains-Metadata
+(deftest Insert-Retains-Metadata
   ;; create a tree, insert, assert that all metas are non-null
   (is (every?
        (comp not nil?)
@@ -367,10 +363,7 @@
            (nearest-neighbor [0 0] 5)
            (->> (map meta))))))
 
-
-(def inside-interval? (ns-resolve 'core 'inside-interval?))
-
-(deftest- Inside-Interval?
+(deftest Inside-Interval?
   (let [interval (map double-array [[0 10] [5 10]])]
     (are [point expected] (= expected (inside-interval? interval (double-array point)))
          [5 7] true
@@ -380,7 +373,7 @@
          [0 5] true
          [9 6] true)))
 
-(deftest- Interval-Search
+(deftest Interval-Search
   (let [points (for [x (range 11) y (range 11)] [(double x) (double y)])
         tree (build-tree points)
         naive-interval-search (fn [interval]
@@ -397,7 +390,7 @@
          [[-100 100] [-100 100]]
          [[5 5] [0 10]])))
 
-(deftest- Interval-Search-Retains-Metadata
+(deftest Interval-Search-Retains-Metadata
   (let [tree (->> (for [x (range 5) y (range 5)] [(double x) (double y)])
                   (map #(with-meta % {:value %}))
                   build-tree)

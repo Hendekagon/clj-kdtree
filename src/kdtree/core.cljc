@@ -6,7 +6,7 @@
 (defrecord Node [left right value])
 (defrecord Result [point ^double dist-squared])
 
-(defn- dist-squared
+(defn dist-squared
   "Compute the K-dimensional distance between two points"
   [^doubles a ^doubles b]
   (loop [res (double 0.0)
@@ -16,15 +16,7 @@
       (let [v (- (aget a ind) (aget b ind))]
         (recur (+ res (* v v)) (inc ind))))))
 
-(def ^:private dist-func (atom dist-squared))
-
-(defn set-dist-func! [func]
-  (reset! dist-func func))
-
-(defn get-dist-func []
-  @dist-func)
-
-(defn- build-tree-internal [points depth]
+(defn build-tree-internal [points depth]
   (if (empty? points) nil
       (let [point-count (count points)
             k (count (nth points 0))
@@ -56,9 +48,7 @@ points are of the same dimension."
   [points]
   (build-tree-internal points 0))
 
-
-
-(defn- insert-internal [tree ^doubles point depth point-meta]
+(defn insert-internal [tree ^doubles point depth point-meta]
   (let [k (alength point)
         dimension (mod depth k)]
     (if (nil? tree)
@@ -84,7 +74,7 @@ points are of the same dimension."
 
 
 
-(defn- find-min-internal [tree dimension depth]
+(defn find-min-internal [tree dimension depth]
   (when tree
     (let [k (count (:value tree))
           min-node (fn [node1 node2]
@@ -116,7 +106,7 @@ balanced tree."
 
 
 
-(defn- points=
+(defn points=
   "Compares 2 points represented by arrays of doubles and return true if they are equal"
   [^doubles a ^doubles b]
   (loop [i 0]
@@ -124,7 +114,7 @@ balanced tree."
           (== (aget a i) (aget b i)) (recur (inc i))
           :else false)))
 
-(defn- delete-internal
+(defn delete-internal
   [tree ^doubles point depth]
   (when tree
     (let [^doubles value (:value tree)
@@ -175,7 +165,7 @@ balanced tree."
 
 
 
-(defn- insert-sorted!
+(defn insert-sorted!
   "Inserts value to sorted transient vector. Vector will not grow
 bigger than n elements."
   [vec value ^long n]
@@ -193,36 +183,39 @@ bigger than n elements."
                         (recur (inc ind) existing (assoc! vec ind value))
                         (recur (inc ind) value vec)))))))
 
-(defn- nearest-neighbor-internal [tree ^doubles point n dimension best]
-  (if ;; Empty tree? The best list is unchanged.
-         (nil? tree) best
+(defn nearest-neighbor-internal
+  ([tree ^doubles point n dimension best]
+    (nearest-neighbor-internal dist-squared tree point n dimension best))
+  ([distance tree ^doubles point n dimension best]
+    (if                                                      ;; Empty tree? The best list is unchanged.
+     (nil? tree) best
 
-         ;; Otherwise, recurse!
-         (let [dimension (long dimension)
-               next-dimension (unchecked-remainder-int (unchecked-inc dimension) (alength point))
-               ^doubles v (:value tree)
-               dim-dist (double (- (aget point dimension)
-                                   (aget v dimension)))
-               closest-semiplane ((if (> dim-dist 0.0) :right :left) tree)
-               farthest-semiplane ((if (> dim-dist 0.0) :left :right) tree)
-               ;; Compute best list for the near-side of the search order
-               best-with-cur (insert-sorted! best (Result. v
-                                                           ((get-dist-func) v point)
-                                                           (meta tree)
-                                                           nil)
-                                             n)
-               best-near (nearest-neighbor-internal closest-semiplane point n next-dimension best-with-cur)
-               worst-nearest (->> (dec (count best-near))
-                                  (nth best-near)
-                                  :dist-squared)]
+                 ;; Otherwise, recurse!
+                 (let [dimension (long dimension)
+                       next-dimension (unchecked-remainder-int (unchecked-inc dimension) (alength point))
+                       ^doubles v (:value tree)
+                       dim-dist (double (- (aget point dimension)
+                                          (aget v dimension)))
+                       closest-semiplane ((if (> dim-dist 0.0) :right :left) tree)
+                       farthest-semiplane ((if (> dim-dist 0.0) :left :right) tree)
+                       ;; Compute best list for the near-side of the search order
+                       best-with-cur (insert-sorted! best (Result. v
+                                                            (distance v point)
+                                                            (meta tree)
+                                                            nil)
+                                       n)
+                       best-near (nearest-neighbor-internal distance closest-semiplane point n next-dimension best-with-cur)
+                       worst-nearest (->> (dec (count best-near))
+                                       (nth best-near)
+                                       :dist-squared)]
 
-           ;; If the square distance of our search node to point in the
-           ;; current dimension is still better than the *worst* of the near-
-           ;; side best list, there may be a better solution on the far
-           ;; side. Compute & combine with near-side solutions.
-           (if (< (* dim-dist dim-dist) worst-nearest)
-             (recur farthest-semiplane point n next-dimension best-near)
-             best-near))))
+                   ;; If the square distance of our search node to point in the
+                   ;; current dimension is still better than the *worst* of the near-
+                   ;; side best list, there may be a better solution on the far
+                   ;; side. Compute & combine with near-side solutions.
+                   (if (< (* dim-dist dim-dist) worst-nearest)
+                     (recur distance farthest-semiplane point n next-dimension best-near)
+                     best-near)))))
 
 (defn nearest-neighbor
   "Compute n nearest neighbors for a point. If n is
@@ -237,7 +230,7 @@ otherwise, the result is a list of length n."
 
 
 
-(defn- inside-interval? [interval ^doubles point]
+(defn inside-interval? [interval ^doubles point]
   (let [n (alength point)]
     (loop [ind 0]
       (if (== ind n) true
@@ -249,7 +242,7 @@ otherwise, the result is a list of length n."
             (recur (inc ind))
             false))))))
 
-(defn- interval-search-internal [tree interval ^long depth accum]
+(defn interval-search-internal [tree interval ^long depth accum]
   (if (nil? tree)
     accum
     (let [^doubles point (:value tree)
