@@ -10,13 +10,13 @@ For more detail, refer to [Wikipedia on Kd-trees](http://en.wikipedia.org/wiki/K
 
 ## Usage
 
-Add this to your project.clj `:dependencies` list:
+Add this to your deps.edn `:deps` list:
 
-    [clj-kdtree "1.2.0"]
+    [clj-kdtree {:mvn/version "1.2.0"}
 
 #### Build
 ```clojure
-(require 'kdtree)
+(require 'kdtree.api :as kdtree)
 
 (def points [[8 8] [3 1] [6 6] [7 7] [1 3] [4 4] [5 5]])
 ;; Build a kdtree from a set of points
