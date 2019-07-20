@@ -36,7 +36,7 @@
       (/ (dot a b) la lb)
       0.0)))
 
-(defn build-tree-internal [dist-fn points depth]
+(defn build-tree [dist-fn points depth]
   (if (empty? points) nil
       (let [point-count (count points)
             k (count (nth points 0))
@@ -50,11 +50,11 @@
                               (nth (points (dec n)) dimension))
                            (recur (dec n))
                            :else n))
-            left-tree (build-tree-internal
+            left-tree (build-tree
                        dist-fn
                        (subvec points 0 split-point)
                        (inc depth))
-            right-tree (build-tree-internal
+            right-tree (build-tree
                         dist-fn
                         (subvec points (inc split-point))
                         (inc depth))]
@@ -65,23 +65,24 @@
                (meta (nth points split-point))
                nil))))
 
-(defn insert-internal [{dist-fn :dist-fn :as tree} ^doubles point depth point-meta]
-  (let [k (alength point)
-        dimension (mod depth k)]
-    (if (nil? tree)
-      (Node. dist-fn nil nil point point-meta nil)
-      (let [^doubles value (:value tree)
-            go-to-left? (< (aget point dimension)
-                           (aget value dimension))
-            left (if go-to-left?
-                   (insert-internal (:left tree) point (inc depth) point-meta)
-                   (:left tree))
-            right (if-not go-to-left?
-                    (insert-internal (:right tree) point (inc depth) point-meta)
-                    (:right tree))]
-        (Node. dist-fn left right value (meta tree) nil)))))
+(defn insert
+  ([{dist-fn :dist-fn :or {dist-fn dist-squared} insert? :insert? :as tree} ^doubles point depth point-meta]
+    (let [k (alength point)
+          dimension (mod depth k)]
+       (if (or (nil? tree) insert?)
+         (Node. dist-fn nil nil point point-meta nil)
+         (let [^doubles value (:value tree)
+               go-to-left? (< (aget point dimension)
+                             (aget value dimension))
+               left (if go-to-left?
+                      (insert  (:left tree)  point (inc depth) point-meta)
+                      (:left tree))
+               right (if-not go-to-left?
+                       (insert (:right tree) point (inc depth) point-meta)
+                       (:right tree))]
+            (Node. dist-fn left right value (meta tree) nil))))))
 
-(defn find-min-internal [tree dimension depth]
+(defn find-min [tree dimension depth]
   (when tree
     (let [k (count (:value tree))
           min-node (fn [node1 node2]
@@ -99,17 +100,8 @@
           tree)
         ;; otherwise, compare min of self & children
         (-> tree
-            (min-node (find-min-internal (:left tree) dimension (inc depth)))
-            (min-node (find-min-internal (:right tree) dimension (inc depth))))))))
-
-(defn find-min
-  "Locate the point with the smallest value in a given dimension.
-Used internally by the delete function. Runs in O(√n) time for a
-balanced tree."
-  [tree dimension]
-  (let [res (find-min-internal tree dimension 0)]
-      (with-meta (vec (:value res))
-                 (meta res))))
+            (min-node (find-min (:left tree) dimension (inc depth)))
+            (min-node (find-min (:right tree) dimension (inc depth))))))))
 
 (defn points=
   "Compares 2 points represented by arrays of doubles and return true if they are equal"
@@ -119,7 +111,7 @@ balanced tree."
           (== (aget a i) (aget b i)) (recur (inc i))
           :else false)))
 
-(defn delete-internal
+(defn delete
   [{dist-fn :dist-fn :as tree} ^doubles point depth]
   (when tree
     (let [^doubles value (:value tree)
@@ -130,30 +122,30 @@ balanced tree."
        (not (points= point value))
        (let [go-to-left? (< (aget point dimension) (aget value dimension))
              left (if go-to-left?
-                    (delete-internal (:left tree) point (inc depth))
+                    (delete (:left tree) point (inc depth))
                     (:left tree))
              right (if-not go-to-left?
-                     (delete-internal (:right tree) point (inc depth))
+                     (delete (:right tree) point (inc depth))
                      (:right tree))]
          (Node. dist-fn left right (:value tree) (meta tree) nil))
        ;; point is here... three cases:
        ;; right is not null.
        (:right tree)
-       (let [min (find-min-internal (:right tree) dimension (inc depth))]
+       (let [min (find-min (:right tree) dimension (inc depth))]
          (Node.
           dist-fn
           (:left tree)
-          (delete-internal (:right tree) (:value min) (inc depth))
+          (delete (:right tree) (:value min) (inc depth))
           (:value min)
           (meta min)
           nil))
        ;; left if not null
        (:left tree)
-       (let [min (find-min-internal (:left tree) dimension (inc depth))]
+       (let [min (find-min (:left tree) dimension (inc depth))]
          (Node.
           dist-fn
           nil
-          (delete-internal (:left tree) (:value min) (inc depth))
+          (delete (:left tree) (:value min) (inc depth))
           (:value min)
           (meta min)
           nil))
@@ -178,7 +170,7 @@ bigger than n elements."
                         (recur (inc ind) existing (assoc! vec ind value))
                         (recur (inc ind) value vec)))))))
 
-(defn nearest-neighbor-internal [{dist-fn :dist-fn :as tree} ^doubles point n dimension best]
+(defn nearest-neighbor [{dist-fn :dist-fn :as tree} ^doubles point n dimension best]
   (if ;; Empty tree? The best list is unchanged.
          (nil? tree) best
          ;; Otherwise, recurse!
@@ -195,7 +187,7 @@ bigger than n elements."
                                                            (meta tree)
                                                            nil)
                                              n)
-               best-near (nearest-neighbor-internal closest-semiplane point n next-dimension best-with-cur)
+               best-near (nearest-neighbor closest-semiplane point n next-dimension best-with-cur)
                worst-nearest (->> (dec (count best-near))
                                   (nth best-near)
                                   :dist)]
@@ -219,7 +211,7 @@ bigger than n elements."
             (recur (inc ind))
             false))))))
 
-(defn interval-search-internal [tree interval ^long depth accum]
+(defn interval-search [tree interval ^long depth accum]
   (if (nil? tree)
     accum
     (let [^doubles point (:value tree)
@@ -235,12 +227,12 @@ bigger than n elements."
 
           ;;; Go to right subtree only if current dimension value is not to the right of the interval.
           accum (if (<= dim-value right-boundary)
-                  (interval-search-internal (:right tree) interval (unchecked-inc depth) accum)
+                  (interval-search (:right tree) interval (unchecked-inc depth) accum)
                   accum)
 
           ;; Go to left subtree only if current dimension is not to the left of the interval.
           accum (if (> dim-value left-boundary)
-                  (interval-search-internal (:left tree) interval (unchecked-inc depth) accum)
+                  (interval-search (:left tree) interval (unchecked-inc depth) accum)
                   accum)]
       accum)))
 

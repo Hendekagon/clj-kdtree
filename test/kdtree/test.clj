@@ -1,7 +1,7 @@
 (ns kdtree.test
   (:require
-    [kdtree.core :refer [dist-squared insert-sorted! inside-interval? find-min]]
-    [kdtree.api  :refer [build-tree insert delete nearest-neighbor interval-search]]
+    [kdtree.core :as kdc :refer [dist-squared insert-sorted! inside-interval?]]
+    [kdtree.api  :as kd :refer [build-tree insert delete nearest-neighbor interval-search find-min]]
     [clojure.test :refer [deftest is are]])
   (:import [kdtree.core Node Result]))
 
@@ -215,7 +215,7 @@
 ;;; Mimic Neighbors-2d-Example, but build the tree entirely by using insert.
 (deftest Insert-Build-2d-Example
   (let [points [[8 8] [3 1] [1 1] [6 6] [7 7] [3 3] [1 3] [4 4] [5 5]]
-        tree (reduce insert nil points)]
+        tree (reduce insert {:dist-fn kdc/dist-squared :insert? :yes} points)]
     (is (== 2 (:dist (nearest-neighbor tree [2 2]))))
     (is (= (sort
             (results-to-int-points (nearest-neighbor tree [2 2] 4)))

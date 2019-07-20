@@ -4,4 +4,4 @@
  {:test
    {:extra-paths ["test"]
     :extra-deps
-       {criterium {:mvn/version "0.4.4"}}}}
+       {criterium {:mvn/version "0.4.4"}}}}}
