@@ -1,6 +1,6 @@
 (ns kdtree.test
   (:require
-    [kdtree.core :as kdc :refer [dist-squared insert-sorted! inside-interval?]]
+    [kdtree.core :as core :refer [dist-squared insert-sorted! inside-interval?]]
     [kdtree.api  :as kd :refer [build-tree insert delete nearest-neighbor interval-search find-min]]
     [clojure.test :refer [deftest is are]])
   (:import [kdtree.core Node Result]))
