@@ -10,17 +10,17 @@ For more detail, refer to [Wikipedia on Kd-trees](http://en.wikipedia.org/wiki/K
 
 ## Usage
 
-Add this to your project.clj `:dependencies` list:
+Add this to your deps.edn `:deps` list:
 
-    [clj-kdtree "1.2.0"]
+    abscondment/clj-kdtree {:git/url "https://github.com/Hendekagon/clj-kdtree.git" :sha "<latest sha for deps branch>"
 
 #### Build
 ```clojure
-(require 'kdtree)
+(require 'kdtree.api :as kd)
 
 (def points [[8 8] [3 1] [6 6] [7 7] [1 3] [4 4] [5 5]])
 ;; Build a kdtree from a set of points
-(def tree (kdtree/build-tree points))
+(def tree (kd/build-tree points))
 (println "Tree:" tree)
 ```
 
@@ -29,15 +29,15 @@ Add this to your project.clj `:dependencies` list:
 Use tree to find neighbors for one point given a set of points:
 ```clojure
 (println "Four points closest to [2 2]:\n"
-         (kdtree/nearest-neighbor tree [2 2] 4))
+         (kd/nearest-neighbor tree [2 2] 4))
 ```
 output:
 ```text
 Four points closest to [2 2]:
- (#kdtree.Result{:point [1.0 3.0], :dist-squared 2.0}
-  #kdtree.Result{:point [3.0 1.0], :dist-squared 2.0}
-  #kdtree.Result{:point [4.0 4.0], :dist-squared 8.0}
-  #kdtree.Result{:point [5.0 5.0], :dist-squared 18.0})
+ (#kdtree.Result{:point [1.0 3.0], dist 2.0}
+  #kdtree.Result{:point [3.0 1.0], dist 2.0}
+  #kdtree.Result{:point [4.0 4.0], dist 8.0}
+  #kdtree.Result{:point [5.0 5.0], dist 18.0})
 ```
 
 #### Interval search
@@ -45,7 +45,7 @@ Four points closest to [2 2]:
 Find all points inside interval:
 ```clojure
 (println "Points 1≤x≤4, 3≤y≤6\n"
-         (kdtree/interval-search tree [[1 4] [3 6]]))
+         (kd/interval-search tree [[1 4] [3 6]]))
 ```
 output:
 ```text
@@ -60,17 +60,17 @@ Delete point and return new version of a tree. Doesn't change old tree.
 ```clojure
 (println "Four points with deletion:\n"
          (-> tree
-             (kdtree/delete [1 3])
-             (kdtree/delete [3 1])
-             (kdtree/nearest-neighbor [2 2] 4)))
+             (kd/delete [1 3])
+             (kd/delete [3 1])
+             (kd/nearest-neighbor [2 2] 4)))
 ```
 output:
 ```text
 Four points with deletion:
- (#kdtree.Result{:point [4.0 4.0], :dist-squared 8.0}
-  #kdtree.Result{:point [5.0 5.0], :dist-squared 18.0}
-  #kdtree.Result{:point [6.0 6.0], :dist-squared 32.0}
-  #kdtree.Result{:point [7.0 7.0], :dist-squared 50.0})
+ (#kdtree.Result{:point [4.0 4.0], dist 8.0}
+  #kdtree.Result{:point [5.0 5.0], dist 18.0}
+  #kdtree.Result{:point [6.0 6.0], dist 32.0}
+  #kdtree.Result{:point [7.0 7.0], dist 50.0})
 ```
 
 #### Insert
@@ -79,16 +79,16 @@ Insert point and return new version of a tree. Doesn't change old tree.
 ```clojure
 (println "\n\nFour points with insertion:\n"
          (-> tree
-             (kdtree/insert [1.5 1.5])
-             (kdtree/nearest-neighbor [2 2] 4)))
+             (kd/insert [1.5 1.5])
+             (kd/nearest-neighbor [2 2] 4)))
 ```
 output:
 ```text
 Four points with insertion:
- (#kdtree.Result{:point [1.5 1.5], :dist-squared 0.5}
-  #kdtree.Result{:point [3.0 1.0], :dist-squared 2.0}
-  #kdtree.Result{:point [1.0 3.0], :dist-squared 2.0}
-  #kdtree.Result{:point [4.0 4.0], :dist-squared 8.0})
+ (#kdtree.Result{:point [1.5 1.5], dist 0.5}
+  #kdtree.Result{:point [3.0 1.0], dist 2.0}
+  #kdtree.Result{:point [1.0 3.0], dist 2.0}
+  #kdtree.Result{:point [4.0 4.0], dist 8.0})
 ```
 
 #### Metadata
@@ -97,9 +97,9 @@ To store arbitrary information in points you can use metadata attached to the po
 
 ```clojure
 (def point (with-meta [0 0] {:value "Hello"}))
-(def tree (kdtree/build-tree [point]))
+(def tree (kd/build-tree [point]))
 (println "Meta:"
-         (meta (kdtree/nearest-neighbor tree [1 1])))
+         (meta (kd/nearest-neighbor tree [1 1])))
 ```
 output:
 ```text
@@ -108,7 +108,7 @@ Meta: {:value Hello}
 
 ## License
 
-Copyright (C) 2009-2015 Brendan Ribera [and contributors](https://github.com/abscondment/clj-kdtree/graphs/contributors). All rights reserved.
+Copyright (C) 2009-2015 Brendan Ribera [and contributors](https://github.com/abscondment/clj-kd/graphs/contributors). All rights reserved.
 
 Distributed under the MIT License; see the file LICENSE at the root of
 this distribution.

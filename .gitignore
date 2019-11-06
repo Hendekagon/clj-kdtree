@@ -3,7 +3,4 @@ pom.xml
 *.jar
 .lein-*
 /target
-.nrepl-port
 .idea
-*.iml
-.cpcache

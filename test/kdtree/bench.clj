@@ -1,5 +1,5 @@
 (ns kdtree.bench
-  (:require [kdtree.core :as kd]
+  (:require [kdtree.api :as kd]
             [criterium.core :as cr])
   (:import [net.sf.javaml.core.kdtree KDTree]))
 
@@ -40,7 +40,7 @@
                                      (* (- v1 v2)
                                         (- v1 v2)))
                                    point p2)))]
-      (map (fn [p] {:point p :dist-squared (dst-sqrd p)}) neibs)))
+      (map (fn [p] {:point p :dist (dst-sqrd p)}) neibs)))
   (interval-search [this interval]
     (let [lowk (double-array (map first interval))
           uppk (double-array (map second interval))]

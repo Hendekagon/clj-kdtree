@@ -1,6 +1,8 @@
 (ns kdtree.test
-  (:use [kdtree.core]
-        [clojure.test])
+  (:require
+    [kdtree.core :as core :refer [dist-squared insert-sorted! inside-interval?]]
+    [kdtree.api  :as kd :refer [build-tree insert delete nearest-neighbor interval-search find-min]]
+    [clojure.test :refer [deftest is are]])
   (:import [kdtree.core Node Result]))
 
 (defn dist-squared-vec [a b]
@@ -145,7 +147,7 @@
 (deftest Neighbors-2d-Example-Wikipedia
   (let [tree (build-tree [[1 11] [2 5] [4 8] [6 4] [5 0] [7 9] [8 2]])]
     (is (= (nearest-neighbor tree [3 9])
-           (kdtree.core/Result. [4.0 8.0] 2.0)))))
+           (Result. [4.0 8.0] 2.0)))))
 
 ;;; A simple 2d example.
 (deftest Neighbors-2d-Example
@@ -153,7 +155,7 @@
         tree (build-tree points)]
     ;;; Confirm that the nearest hit is one of the four
     ;;; points that are root 2 away.
-    (is (== 2 (:dist-squared (nearest-neighbor tree [2 2]))))
+    (is (== 2 (:dist (nearest-neighbor tree [2 2]))))
     ;; Confirm that the four nearest are our points on the 1 and 3 lines.
     (is (= (sort
             (results-to-int-points (nearest-neighbor tree [2 2] 4)))
@@ -201,7 +203,7 @@
 (deftest Insert-2d-Example
   (let [points [[8 8] [3 1] [6 6] [7 7] [3 3] [1 3] [4 4] [5 5]]
         tree (insert (build-tree points) [1 1])]
-    (is (== 2 (:dist-squared (nearest-neighbor tree [2 2]))))
+    (is (== 2 (:dist (nearest-neighbor tree [2 2]))))
     (is (= (sort
             (results-to-int-points
              (nearest-neighbor tree [2 2] 4)))
@@ -213,8 +215,8 @@
 ;;; Mimic Neighbors-2d-Example, but build the tree entirely by using insert.
 (deftest Insert-Build-2d-Example
   (let [points [[8 8] [3 1] [1 1] [6 6] [7 7] [3 3] [1 3] [4 4] [5 5]]
-        tree (reduce insert (build-tree points) points)]
-    (is (== 2 (:dist-squared (nearest-neighbor tree [2 2]))))
+        tree (reduce insert {:dist-fn kdc/dist-squared :insert? :yes} points)]
+    (is (== 2 (:dist (nearest-neighbor tree [2 2]))))
     (is (= (sort
             (results-to-int-points (nearest-neighbor tree [2 2] 4)))
            '([1 1] [1 3] [3 1] [3 3])))
@@ -265,24 +267,24 @@
 
 (deftest Test-delete-root
   (let [tree
-        (Node.
-         (Node.
-          (Node.
+        (Node. dist-squared
+         (Node. dist-squared
+          (Node. dist-squared
            nil
-           (Node. nil nil (ds 20 20))
+           (Node. dist-squared nil nil (ds 20 20))
            (ds 10 35))
           nil
           (ds 20 45))
-         (Node.
-          (Node.
-           (Node.
-            (Node.
-             (Node. nil nil (ds 60 10))
+         (Node. dist-squared
+          (Node. dist-squared
+           (Node. dist-squared
+            (Node. dist-squared
+             (Node. dist-squared nil nil (ds 60 10))
              nil
              (ds 70 20))
             nil
             (ds 50 30))
-           (Node. nil nil (ds 90 60))
+           (Node. dist-squared nil nil (ds 90 60))
            (ds 80 40))
           nil
           (ds 60 80))
@@ -301,10 +303,10 @@
 
 (deftest Test-delete-same-x
   (let [ points [[0 0] [0 0.5] [0 1] [1 1] [1 0]]
-        tree (kdtree.core/build-tree points)
-        tree-del-00 (kdtree.core/delete tree [0 0])]
+        tree (build-tree points)
+        tree-del-00 (delete tree [0 0])]
     (is (= (map double [0 0.5])
-           (:point (kdtree.core/nearest-neighbor tree-del-00 [0 0]))))))
+           (:point (nearest-neighbor tree-del-00 [0 0]))))))
 
 
 (deftest Find-Min-Retains-Metadata
@@ -321,7 +323,7 @@
   (let [metadata {:arbitrary "Data!"}
         tree (build-tree [[1 11] [2 5] (with-meta [4 8] metadata) [6 4] [5 0] [7 9] [8 2]])]
     (is (= (nearest-neighbor tree [3 9])
-           (kdtree.core/Result. [4.0 8.0] 2.0)))
+           (Result. [4.0 8.0] 2.0)))
     (is (= (meta (nearest-neighbor tree [3 9]))
            metadata))))
 
